@@ -1,0 +1,63 @@
+name: CI & CD
+
+on:
+  push:
+    branches: [ main, development ] # Geändert auf main
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, development ]
+
+jobs:
+  test:
+    name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        # os: [windows-latest]
+        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
+        # python-version: ["3.11"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Auch hier wichtig für die Versionierung
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+          cache: 'pip'
+      - name: Prepare & Run Tests
+        run: |
+          pip install tox
+          tox -e py${{ matrix.python-version == '3.11' && '311' || matrix.python-version == '3.12' && '312' || matrix.python-version == '3.13' && '313' || matrix.python-version == '3.14' && '314' || '315' }}
+          # make tox # Tox nutzt automatisch die aktive Python-Version
+
+  deploy:
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: ${{ contains(github.ref, '-test') && 'testpypi' || 'pypi' }}
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # ESSENZIELL für setuptools-scm
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      
+      - name: Build via Makefile
+        run: |
+          pip install tox
+          make build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # Falls es Test-PyPI ist, wird die repository-url genutzt
+          repository-url: ${{ contains(github.ref, '-test') && 'https://test.pypi.org/legacy/' || '' }}
