@@ -1,0 +1,13 @@
+[identity.dn]
+countryName = "DE"
+organizationName = "Fitzz TeXnik Welt"
+commonName = "My Root CA"
+localityName = "Somewherecity"
+organizationalUnitName = "Security"
+
+
+[policy.intermediate.dn]
+countryName = "match"
+organizationName = "match"
+commonName = "supplied"
+

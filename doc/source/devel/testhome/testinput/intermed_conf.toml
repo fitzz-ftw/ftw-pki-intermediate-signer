@@ -1,0 +1,40 @@
+[identity.dn]
+countryName = "DE"
+organizationName = "Fitzz TeXnik Welt"
+commonName = "Intermediat Technik"
+localityName = "Somewherecity"
+organizationalUnitName = "IT-Security"
+
+
+[policy.dn]
+countryName = "match"
+organizationName = "match"
+commonName = "supplied"
+localityName = "optional"
+organizationalUnitName="optional"
+stateOrProvinceName="supplied"
+
+[policy.ext]
+ocspURI = "http://ocsp.deine-pki.test"
+crlURI = "http://pki.deine-pki.test/crl"
+caIssuerURI = "http://pki.deine-pki.test/ca.crt"
+
+
+[policy.intermediate.dn]
+localityName = "supplied"
+organizationalUnitName="supplied"
+
+[policy.intermediate.ext]
+crlURI = "http://pki.deine-pki.test/crl_intermediate"
+
+[policy.standalone.dn]
+countryName = "match"
+organizationName = "match"
+commonName = "supplied"
+localityName = "optional"
+organizationalUnitName="optional"
+stateOrProvinceName="supplied"
+
+
+
+
