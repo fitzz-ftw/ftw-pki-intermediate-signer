@@ -12,8 +12,12 @@ namespaces = true
 where = ["src"]
 
 [tool.setuptools_scm]
-tag_regex = '^(?P<prefix>v)?(?P<version>[^\+|-]+)(?P<suffix>-test)?$'
-write_to = "src/ftwpki/intermed/_version.py"
+# Erläuterung:
+# ^v               -> Muss mit 'v' beginnen
+# (?P<version>...) -> Die Versionsnummer (0.0.1)
+# (?P<suffix>...)  -> Optionaler Anhang wie -test, a1, .rc1
+tag_regex = '^v(?P<version>[^\+|-]+)(?P<suffix>[-._][a-zA-Z0-9]+)?$'
+write_to = "src/ftwpki/intermed_signer/_version.py"
 
 [project]
 classifiers = [
@@ -31,7 +35,7 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 dependencies = ["ftw-pki-libs"]
-description = ""
+description = "A dedicated signing utility for issuing end-entity certificates using an Intermediate CA, featuring strict policy validation."
 dynamic = ["version"]
 name = "ftw-pki-intermediate-signer"
 readme = "README.md"
@@ -39,13 +43,15 @@ requires-python = ">=3.11"
 license = "LGPL-2.1-or-later"
 
 [project.urls]
-# Documentation = "https://ftw-patch.readthedocs.io/en/stable/"
-# Homepage = "https://github.com/fitzz-ftw/ftw-patch"
-# Issues = "https://github.com/fitzz-ftw/ftw-patch/issues"
-# Repository = "https://github.com/fitzz-ftw/ftw-patch.git"
+Homepage = "https://github.com/fitzz-ftw/ftw-pki-intermediate-signer"
+# Documentation = "https://ftw-pki-intermediate-signer.readthedocs.io/"
+Documentation = "https://github.com/fitzz-ftw/ftw-pki-intermediate-signer/blob/main/README.md"
+Repository = "https://github.com/fitzz-ftw/ftw-pki-intermediate-signer.git"
+Issues = "https://github.com/fitzz-ftw/ftw-pki-intermediate-signer/issues"
+Changelog = "https://github.com/fitzz-ftw/ftw-pki-intermediate-signer/blob/main/CHANGELOG.md"
 
 [project.scripts]
-ftwpkiintermedsign = "ftwpki.intermediate-signer.programms:prog_intermediate_sign"
+ftwpkiintermedsign = "ftwpki.intermed_signer.programms:prog_intermediate_sign"
 
 [project.optional-dependencies]
 doc = [
