@@ -33,7 +33,7 @@ classifiers = [
 dependencies = ["ftw-pki-libs"]
 description = ""
 dynamic = ["version"]
-name = "ftw-pki-intermed"
+name = "ftw-pki-intermediate-signer"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "LGPL-2.1-or-later"
@@ -45,7 +45,7 @@ license = "LGPL-2.1-or-later"
 # Repository = "https://github.com/fitzz-ftw/ftw-patch.git"
 
 [project.scripts]
-ftwpkiintermedcsr = "ftwpki.intermed.csr:prog_intermediate_csr"
+ftwpkiintermedsign = "ftwpki.intermediate-signer.programms:prog_intermediate_sign"
 
 [project.optional-dependencies]
 doc = [
@@ -60,7 +60,7 @@ doc = [
   "sphinxcontrib-mermaid",
 ]
 
-dev = ["ftw-pki-intermed[test,doc,lint]", "esbonio==0.16.5"]
+dev = ["ftw-pki-intermediate-signer[test,doc,lint]", "esbonio==0.16.5"]
 lint = ["ruff"]
 test = ["pytest", "pytest-mock", "pytest-cov", "ftw-devtools"]
 
@@ -114,7 +114,7 @@ omit = [
   "**/_version.py",
 ]
 
-source = ["ftwpki.intermed"]
+source = ["ftwpki.intermed_signer"]
 
 [tool.coverage.report]
 exclude_also = [
