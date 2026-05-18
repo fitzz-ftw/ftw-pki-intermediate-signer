@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.3a2] - 2026-05-18
+
+### Added
+- Add automated GitHub Actions CI/CD pipeline configurations (`ci.yml`) for multi-environment validation.
+
+### Changed
+- Refactor internal exception handling structures and modernize configuration processing routines inside `ftwpkiintermedsign` entry points.
+
 ## [0.0.3a1] - 2026-05-15
 
 ### Added
