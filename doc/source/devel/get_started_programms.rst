@@ -29,7 +29,7 @@ The Signing Intermediate Programm
 
 
 >>> cmd_line =  "--conf-file intermed_conf.toml"
->>> cmd_line += " -k privat/reinsha.key.pem "
+>>> cmd_line += " -k privat/reinsha "
 >>> cmd_line += " --private-dir privat"
 >>> cmd_line += " --policy-name standalone"
 >>> cmd_line += " -t standalone"
@@ -41,7 +41,7 @@ The Signing Intermediate Programm
 >>> sys_argv= shlex.split(cmd_line) 
 >>> sys_argv #doctest: +NORMALIZE_WHITESPACE
 ['--conf-file', 'intermed_conf.toml', 
- '-k', 'privat/reinsha.key.pem', 
+ '-k', 'privat/reinsha', 
  '--private-dir', 'privat', 
  '--policy-name', 'standalone',
  '-t', 'standalone',
@@ -75,7 +75,7 @@ Namespace(countryName='match',
     commonName='supplied', 
     policy_name='standalone',
     conf_file=...Path('intermed_conf.toml'), 
-    private_key='privat/reinsha.key.pem', 
+    key_name='privat/reinsha', 
     private_dir='privat',
     certificate='Fitzz-TeXnik-WeltSomewherecity.crt',
     validity_days=365,
@@ -88,7 +88,8 @@ Namespace(countryName='match',
         'localityName': 'optional', 
         'organizationName': 'match', 
         'organizationalUnitName': 'optional', 
-        'commonName': 'supplied'})
+        'commonName': 'supplied'}, 
+    private_key='privat/reinsha.key.pem')
 
 
 .. !SECTION
