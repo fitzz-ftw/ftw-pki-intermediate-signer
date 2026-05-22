@@ -115,7 +115,7 @@ def test_prog_intermediate_sign_full_flow(mocker):
 
     mocker.patch("ftwpki.intermed_signer.programms.CSRMultiSigningParser.parse_args", 
                  return_value=mock_args)
-    mocker.patch("ftwpki.intermed_signer.programms.toml2dn_policy", return_value={})
+    mocker.patch("ftwpki.intermed_signer.programms.toml2_dn_policy", return_value={})
     mocker.patch("ftwpki.intermed_signer.programms.toml2ext_policy", return_value={})
 
     # 2. Mocke die Dateisystem-Ladebefehle
@@ -151,7 +151,7 @@ def test_prog_intermediate_sign_full_flow(mocker):
 def test_prog_intermediate_sign_validation_fails(mocker):
     # 1. Setup: Mocks für die Infrastruktur (Parser, Path, etc.)
     mocker.patch("ftwpki.intermed_signer.programms.CSRMultiSigningParser.parse_args")
-    mocker.patch("ftwpki.intermed_signer.programms.toml2dn_policy", return_value={})
+    mocker.patch("ftwpki.intermed_signer.programms.toml2_dn_policy", return_value={})
     mocker.patch("ftwpki.intermed_signer.programms.toml2ext_policy", return_value={})
     mocker.patch("ftwpki.intermed_signer.programms.load_certificate_from_pem")
     mocker.patch("ftwpki.intermed_signer.programms.load_csr_from_pem")

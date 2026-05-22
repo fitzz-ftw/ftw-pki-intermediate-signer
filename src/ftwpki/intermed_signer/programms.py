@@ -31,7 +31,7 @@ from ftwpki.baselibs.policies import (
 )
 from ftwpki.baselibs.signer import CertificateSigner
 from ftwpki.baselibs.toml_utils import (
-    toml2dn_policy,
+    toml2_dn_policy,
     toml2ext_policy,
 )
 from ftwpki.baselibs.transport import encrypt_transport_package
@@ -51,7 +51,7 @@ def prog_intermediate_sign(argv: list[str] | None = None, **kwargs) -> int:
     try:
         # SECTION - Configuration
         ca_parser = CSRMultiSigningParser()
-        ca_parser.set_defaults(**toml2dn_policy(argv))
+        ca_parser.set_defaults(**toml2_dn_policy(argv))
         extention = toml2ext_policy(argv)
         args = ca_parser.parse_args(argv)
         # !SECTION - Configuration
