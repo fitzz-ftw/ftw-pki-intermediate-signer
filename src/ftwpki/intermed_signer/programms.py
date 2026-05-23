@@ -1,4 +1,4 @@
-# File: src/ftwpki/intermed/programms.py
+# File: src/ftwpki/intermed_signer/programms.py
 # Author: Fitzz TeXnik Welt
 # Email: FitzzTeXnikWelt@t-online.de
 # License: LGPLv2 or above
@@ -14,7 +14,8 @@ from pathlib import Path
 
 from cryptography import x509
 
-from ftwpki.baselibs.cli_parser import CSRMultiSigningParser, cast
+from ftwpki.baselibs.cli_parser import CSRMultiSigningParser, TomlPreParser, cast
+from ftwpki.baselibs.configuration import IntermedPKIConfig
 from ftwpki.baselibs.core import (
     get_subject_dict,
     load_certificate_from_pem,
@@ -31,13 +32,14 @@ from ftwpki.baselibs.policies import (
 )
 from ftwpki.baselibs.signer import CertificateSigner
 from ftwpki.baselibs.toml_utils import (
-    toml2_dn_policy,
-    toml2ext_policy,
+    toml2dn_policy,
+    toml2ext,
 )
 from ftwpki.baselibs.transport import encrypt_transport_package
 from ftwpki.baselibs.validate import ValidatorDN, validate_and_clamp_validity
 
 # SECTION - Programm Signing
+
 
 
 def prog_intermediate_sign(argv: list[str] | None = None, **kwargs) -> int:
@@ -50,14 +52,22 @@ def prog_intermediate_sign(argv: list[str] | None = None, **kwargs) -> int:
     """
     try:
         # SECTION - Configuration
+        config = IntermedPKIConfig()
+
+        pre_parser = TomlPreParser()
+        pre_args, _ = pre_parser.parse_known_args(argv)
         ca_parser = CSRMultiSigningParser()
-        ca_parser.set_defaults(**toml2_dn_policy(argv))
-        extention = toml2ext_policy(argv)
+        file_conf = toml2dn_policy(config.policies/pre_args.conf_file, pre_args.policy_name)
+        ca_parser.set_defaults(**file_conf)
+        # ca_parser.set_defaults(**toml2_dn_policy(argv))
+        extention = toml2ext(config.policies / pre_args.conf_file, pre_args.policy_name)
+        # extention = toml2ext_policy(argv)
         args = ca_parser.parse_args(argv)
         # !SECTION - Configuration
 
         # SECTION - Validating
-        ca_cert = load_certificate_from_pem(pem_data=Path(args.certificate).read_bytes())
+        ca_cert = load_certificate_from_pem(
+            pem_data=(config.certs/args.certificate).read_bytes())
         current_path_length = cast(
             int, ca_cert.extensions.get_extension_for_class(x509.BasicConstraints).value.path_length
         )
@@ -66,7 +76,9 @@ def prog_intermediate_sign(argv: list[str] | None = None, **kwargs) -> int:
             return 1
 
         csr = load_csr_from_pem(Path(args.certificat_sign_request).read_bytes())
-        val_dn = ValidatorDN(args.policy, get_subject_dict(ca_cert))
+
+        val_dn = ValidatorDN(args.policy, 
+                             get_subject_dict(ca_cert))
         validate_result = val_dn.validate(get_subject_dict(csr))
         validate_result.errors.sort()
 
@@ -79,17 +91,19 @@ def prog_intermediate_sign(argv: list[str] | None = None, **kwargs) -> int:
         # SECTION - Passwordhandling
         pwd_man = PasswordManager(private_dir=args.private_dir)
         pass_phrase = pwd_man.decrypt_password_file(
-            args.passphrasefile, getpass.getpass("Enter Password:")
+            str(config.private_keys / args.passphrasefile), 
+            getpass.getpass("Enter Password:")
         )
         # !SECTION - Passwordhandling
 
         # SECTION - Signing
         private_key_obj = load_private_key_from_pem(
-            pem_data=Path(args.private_key).read_bytes(), passphrase=pass_phrase
+            pem_data=(config.private_keys / args.private_key).read_bytes(), 
+            passphrase=pass_phrase
         )
         cert_signer = CertificateSigner(ca_cert=ca_cert, ca_key=private_key_obj)
         policy_select = {
-            "intermediate": IntermediatePolicy(pathlength=args.path_length),
+            "intermediate": IntermediatePolicy(path_length=args.path_length),
             "standalone": ClientServerPolicy(),
             "user": UserPolicy(),
             "client": ClientPolicy(),
@@ -99,7 +113,10 @@ def prog_intermediate_sign(argv: list[str] | None = None, **kwargs) -> int:
         validity_days = validate_and_clamp_validity(ca_cert, args.validity_days)
 
         signed_cert = cert_signer.sign(
-            csr=csr, policy=policy, validity_days=validity_days.actual_days, **extention
+            csr=csr, 
+            policy=policy, 
+            validity_days=validity_days.actual_days, 
+            **extention
         )
         # !SECTION - Signing
 
@@ -136,25 +153,39 @@ if __name__ == "__main__":  # pragma: no cover
     option_flags = FAIL_FAST
     test_sum = 0
     test_failed = 0
+    passed_files = 0
 
     # Pfad zu den dokumentierenden Tests
     testfiles_dir = Path(__file__).parents[3] / "doc/source/devel"
-    test_file = testfiles_dir / "get_started_programms.rst"
-    # test_file = testfiles_dir / "get_started_prog_intermed_sign.rst"
+    test_files = [
+        "get_started_programms.rst",
+        "get_started_run_programms.rst",
+        ]
 
-    if test_file.exists():
-        print(f"--- Running Doctest for {test_file.name} ---")
-        doctestresult = testfile(
-            str(test_file),
-            module_relative=False,
-            verbose=be_verbose,
-            optionflags=option_flags,
-        )
-        test_failed += doctestresult.failed
-        test_sum += doctestresult.attempted
-        if test_failed == 0:
-            print(f"\nDocTests passed without errors, {test_sum} tests.")
+    for file in test_files:
+        test_file = testfiles_dir / file
+        if test_file.exists():
+            print(f"--- Running Doctest for {test_file.name} ---")
+            doctestresult = testfile(
+                str(test_file),
+                module_relative=False,
+                verbose=be_verbose,
+                optionflags=option_flags,
+            )
+            test_failed += doctestresult.failed
+            test_sum += doctestresult.attempted
+            if doctestresult.failed > 0 and option_flags & FAIL_FAST:
+                print(f"Doctest result for {test_file.name}: {doctestresult}")
+                print(
+                    f"\nKeep going! You already passed {passed_files} files "
+                    f"with {test_sum} tests before this hit."
+                )
+                break  # Stop on first failure if FAIL_FAST is set
+            passed_files += 1
         else:
-            print(f"\nDocTests failed: {test_failed} tests.")
+            print(f"⚠️ Warning: Test file {test_file.name} not found.")
+    if test_failed == 0:
+        print(f"\nDocTests passed without errors, {test_sum} tests.")
     else:
-        print(f"⚠️ Warning: Test file {test_file.name} not found.")
+        if not option_flags & FAIL_FAST:
+            print(f"\nDocTests failed: {test_failed} tests out of {test_sum}.")

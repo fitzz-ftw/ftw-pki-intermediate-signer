@@ -1,0 +1,37 @@
+[identity.dn]
+countryName = "DE"
+organizationName = "Muster-Verband e.V."
+commonName = "Muster-Verband Hamburg Regional CA"
+localityName = "Hamburg"
+organizationalUnitName = "Regionalverband Nord"
+
+[policy.dn]
+# Validierungsregeln, wenn diese CA selbst Anfragen prüft
+countryName = "match"
+organizationName = "match"
+commonName = "supplied"
+localityName = "optional"
+organizationalUnitName = "optional"
+stateOrProvinceName = "optional"
+
+[policy.ext]
+ocspURI = "http://ocsp.example.org/ham"
+crlURI = "http://pki.example.org/ham/regional.crl"
+caIssuerURI = "http://pki.example.org/root/root.crt"
+
+[policy.intermediate.dn]
+# Regeln für CAs, die von DIESER Hamburg-CA signiert werden (unsere Stufe 2)
+localityName = "match"             # Erzwingt, dass Unter-CAs auch in Hamburg sitzen müssen
+organizationalUnitName = "supplied" # Bereich (z.B. "Infrastruktur" oder "Mitglieder")
+
+[policy.intermediate.ext]
+crlURI = "http://pki.example.org/ham/sub_intermediate.crl"
+
+[policy.standalone.dn]
+# Regeln für direkte Endzertifikate, falls Hamburg mal direkt eins ausstellen würde
+countryName = "match"
+organizationName = "match"
+commonName = "supplied"
+localityName = "match"
+organizationalUnitName = "optional"
+stateOrProvinceName = "optional"
