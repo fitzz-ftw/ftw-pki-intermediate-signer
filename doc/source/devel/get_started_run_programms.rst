@@ -114,8 +114,9 @@ Path length too high: 1
 >>> sys_argv= shlex.split(cmd_line) 
 
 >>> prog_intermediate_sign(sys_argv)
-  - [countryName]: DISALLOWED
-  - [organizationName]: DISALLOWED
+While policyvalidation following missmatch occurs:
+    - [countryName]: DISALLOWED
+    - [organizationName]: DISALLOWED
 1
 
 >>> def key_inter(prompt):
