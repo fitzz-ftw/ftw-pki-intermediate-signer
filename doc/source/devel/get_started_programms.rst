@@ -10,35 +10,23 @@ The Signing Intermediate Programm
 >>> env = TestHomeEnvironment(Path("doc/source/devel/testhome"),
 ...     appname=appname, appauthor=appauthor
 ...     )
->>> env.setup(False)
+>>> env.setup(True)
 >>> env.clean_output()
 
 >>> from ftwpki.baselibs.configuration import IntermedPKIConfig
->>> config = IntermedPKIConfig()
+>>> config:IntermedPKIConfig = IntermedPKIConfig()
 
->>> rel_private = config.private_keys.relative_to(env.config_dir)
 
->>> rel_certs = config.certs.relative_to(env.data_dir)
->>> rel_chains = config.chains.relative_to(env.data_dir)
->>> rel_policies = config.policies.relative_to(env.config_dir)
 
->>> rel_data = Path("test_data")
->>> _ = env.copy2data(rel_data / rel_certs/ "ca.crt.pem", rel_certs / "ca.crt.pem" )
->>> _ = env.copy2data(rel_data / rel_certs/ "Muster-Verband-Hamburg-Regional-CA_Hamburg.crt.pem", 
-...                  rel_certs / "Muster-Verband-Hamburg-Regional-CA_Hamburg.crt.pem" )
->>> _ = env.copy2data(rel_data / rel_chains/ "all.chain.pem", rel_chains / "all.chain.pem" )
+>>> rel_data = Path("test_ok_data")
+>>> _ = env.copy2config(rel_data /"M-V-HH-CA.pki",
+...            config.passphrases/"M-V-HH-CA.pki")
+>>> _ = env.copy2config(rel_data / "inter1secret",
+...             config.passphrases/"inter1secret")
+>>> _ = env.copy2cwd(rel_data / "member_server.csr",
+...            "member_server.csr")
 
->>> _ = env.copy2config(rel_data / rel_policies / "ca_intermed_hamburg_conf.toml",
-...            rel_policies / "ca_intermed_hamburg_conf.toml")
->>> _ = env.copy2config(rel_data / "private" / "inter1secret",
-...            rel_private / "inter1secret")
->>> _ = env.copy2config(rel_data / "private" / "intermed1.key.pem",
-...            rel_private / "intermed1.key.pem")
-
->>> _ = env.copy2data(rel_data / "intermed1.pub.pem", "intermed1.pub.pem" )
->>> _ = env.copy2cwd(rel_data / "Muster-Verband-Hamburg-Systems-Issuing-CA_Hamburg.csr",
-...            "Muster-Verband-Hamburg-Systems-Issuing-CA_Hamburg.csr")
-
+>>> del config
 
 
 .. !SECTION
@@ -51,82 +39,91 @@ The Signing Intermediate Programm
 ...     print(prompt)
 ...     return "secret"
 
->>> cmd_line =  "--conf-file ca_intermed_hamburg_conf.toml"
->>> cmd_line += " -k intermed1 "
->>> cmd_line += " --private-dir .private"
->>> cmd_line += " --policy-name intermediate"
->>> cmd_line += " -t intermediate"
->>> cmd_line += " -c Muster-Verband-Hamburg-Regional-CA_Hamburg.crt.pem"
+
+>> cmd_line =  "--conf-file ca_intermed_hamburg_conf.toml"
+
+>>> cmd_line = " -k intermed1 "
+>>> cmd_line += " --policy-name standalone "
+>>> cmd_line += " -t server"
+>>> cmd_line += " -c M-V-HH-CA.crt.pem"
 >>> cmd_line += " inter1secret"
->>> cmd_line += " Muster-Verband-Hamburg-Systems-Issuing-CA_Hamburg.csr"
+>>> cmd_line += " member_server.csr"
 
 >>> import shlex
 >>> sys_argv= shlex.split(cmd_line) 
 >>> sys_argv #doctest: +NORMALIZE_WHITESPACE
-['--conf-file', 'ca_intermed_hamburg_conf.toml', 
- '-k', 'intermed1', 
- '--private-dir', '.private', 
- '--policy-name', 'intermediate', 
- '-t', 'intermediate', 
- '-c', 'Muster-Verband-Hamburg-Regional-CA_Hamburg.crt.pem', 
+['-k', 'intermed1', 
+ '--policy-name', 'standalone', 
+ '-t', 'server', 
+ '-c', 'M-V-HH-CA.crt.pem', 
  'inter1secret', 
- 'Muster-Verband-Hamburg-Systems-Issuing-CA_Hamburg.csr']
+ 'member_server.csr']
 
-.. !SECTION
-
+.. !SECTION - Prepare
 
 
 .. SECTION - Programm Signing
 
 .. SECTION - Configuration
 >>> from ftwpki.baselibs.configuration import IntermedPKIConfig
->>> config = IntermedPKIConfig()
+
 
 >>> from ftwpki.baselibs.toml_utils import toml2dn_policy, toml2ext
->>> from ftwpki.baselibs.cli_parser import CSRMultiSigningParser,TomlPreParser
+>>> from ftwpki.baselibs.cli_parser import CSRMultiSigningParser
 
->>> pre_parser = TomlPreParser()
+>>> pre_parser = CSRMultiSigningParser(add_help=False, allow_abbrev=False)
 >>> pre_args , _ = pre_parser.parse_known_args(sys_argv)
 
+>>> cert_name = pre_args.certificate.split(".")
 
 
->>> ca_parser = CSRMultiSigningParser(prog="ftwpkicasign")
+>>> pre_args.certificat = pre_args.certificate if len(cert_name) >= 3 else f"{cert_name[0]}.crt.pem"  
 
->>> file_conf = toml2dn_policy(config.policies/pre_args.conf_file, pre_args.policy_name)
+>>> cert_name = cert_name[0]
+
+
+>>> config = IntermedPKIConfig(cert_name)
+>>> config.handle_pki_file()
+
+
+>>> ca_parser = CSRMultiSigningParser()
+
+>>> file_conf = config.get_dn_policies(f"{cert_name}.policy",pre_args.policy_name)
 
 
 >>> ca_parser.set_defaults(**file_conf)
 
 
->>> extention = toml2ext(config.policies/pre_args.conf_file, pre_args.policy_name)
+>>> extention = config.get_extentions(f"{cert_name}.policy", pre_args.policy_name)
 
 
 
 >>> args = ca_parser.parse_args(sys_argv)
 >>> args #doctest: +NORMALIZE_WHITESPACE +ELLIPSIS 
 Namespace(countryName='match', 
-    stateOrProvinceName='optional', 
-    localityName='match', 
-    organizationName='match', 
-    organizationalUnitName='supplied', 
-    commonName='supplied', 
-    policy_name='intermediate', 
-    conf_file=...Path('ca_intermed_hamburg_conf.toml'), 
-    key_name='intermed1', 
-    private_dir='.private', 
-    certificate='Muster-Verband-Hamburg-Regional-CA_Hamburg.crt.pem', 
-    validity_days=365, 
-    path_length=0, 
-    passphrasefile='inter1secret', 
-    certificat_sign_request='Muster-Verband-Hamburg-Systems-Issuing-CA_Hamburg.csr', 
-    policy_type='intermediate', 
-    policy={'countryName': 'match', 
-        'stateOrProvinceName': 'optional', 
-        'localityName': 'match', 
-        'organizationName': 'match', 
-        'organizationalUnitName': 'supplied', 
-        'commonName': 'supplied'}, 
-    private_key='intermed1.key.pem')
+     stateOrProvinceName='optional', 
+     localityName='match', 
+     organizationName='match', 
+     organizationalUnitName='optional', 
+     commonName='supplied', 
+     policy_name='standalone', 
+     conf_file=None, 
+     key_name='intermed1', 
+     private_dir=None, 
+     certificate='M-V-HH-CA.crt.pem', 
+     validity_days=365, 
+     path_length=0, 
+     passphrasefile='inter1secret', 
+     certificat_sign_request='member_server.csr', 
+     policy_type='server', 
+     policy={'countryName': 'match', 
+          'stateOrProvinceName': 'optional', 
+          'localityName': 'match', 
+          'organizationName': 'match', 
+          'organizationalUnitName': 'optional', 
+          'commonName': 'supplied'}, 
+     private_key='intermed1.key.pem')
+
 
 
 .. !SECTION - Configuration
@@ -139,20 +136,17 @@ Namespace(countryName='match',
 ...     get_subject_dict,
 ...     )
 
->>> ca_cert = load_certificate_from_pem(
-...      pem_data=(config.certs / args.certificate).read_bytes())
 
->>> ca_cert #doctest: +NORMALIZE_WHITESPACE
-<Certificate(subject=<Name(C=DE,ST=,L=Hamburg,O=Muster-Verband 
-    e.V.,OU=Regionalverband Nord,CN=Muster-Verband Hamburg Regional CA)>, 
-    ...)>
+
 
 >>> from cryptography import x509
 
->>> current_path_length = ca_cert.extensions.get_extension_for_class(x509.BasicConstraints).value.path_length
+>>> current_path_length = config.own_cert.extensions.get_extension_for_class(x509.BasicConstraints).value.path_length
 
 >>> current_path_length
-1
+0
+
+
 
 >>> if (args.policy_name == "intermediate" 
 ...     and current_path_length <= args.path_length):
@@ -167,7 +161,7 @@ Namespace(countryName='match',
 >>> from ftwpki.baselibs.validate import ValidatorDN
 
 >>> val_dn= ValidatorDN(args.policy,
-...          get_subject_dict(ca_cert))
+...          get_subject_dict(config.own_cert))
 >>> validate_result=val_dn.validate(get_subject_dict(csr))
 >>> validate_result.errors.sort()
 
@@ -192,25 +186,17 @@ Returncode 1 abbricht. Es wird kein Zertifikat ausgestellt,
 das nicht den Richtlinien entspricht. Dies stellt die Konsistenz 
 der gesamten Zertifikatskette sicher.
 
->> if not validate_result.is_valid:
-...     for error in validate_result.errors:
-...         print(error)
-...     print("!!!Programstop!!!")
-...     print("Returncode: 1")
-  - [stateOrProvinceName]: SUPPLIED
-!!!Programstop!!!
 Returncode: 1
 
 .. !SECTION - Validating
 
 
-
 .. SECTION - Passwordhandling
 
 >>> from ftwpki.baselibs.passwd import PasswordManager
->>> pwd_man = PasswordManager(private_dir=args.private_dir)
->>> pwd_man
-PasswordManager(private_dir='.private')
+>>> pwd_man = PasswordManager(str(config.private_keys))
+>>> pwd_man #doctest: +ELLIPSIS
+PasswordManager(private_dir='.../ftwpki/.private')
 
 >>> config.private_keys.as_posix() #doctest: +ELLIPSIS 
 '...ftwpki/.private'
@@ -221,6 +207,7 @@ PasswordManager(private_dir='.private')
 Enter Password:
 
 .. !SECTION - Passwordhandling
+
 
 
 .. SECTION - Signing
@@ -234,13 +221,18 @@ Enter Password:
 ...     )
 >>> from ftwpki.baselibs.signer import CertificateSigner
 
->>> private_key_obj= load_private_key_from_pem(
-...             pem_data = (config.private_keys / args.private_key).read_bytes(), 
-...             passphrase=pass_phrase)
 
+
+
+
+>>> private_key_obj= load_private_key_from_pem(
+...     pem_data = config.private_key(), 
+...     passphrase=pass_phrase)
+
+>> type(private_key_obj)
 
 >>> cert_signer = CertificateSigner(
-...      ca_cert=ca_cert,
+...      ca_cert=config.own_cert,
 ...      ca_key=private_key_obj)
 
 
@@ -266,14 +258,15 @@ Enter Password:
 >>> policy = policy_select[args.policy_type]
 
 >>> policy
-IntermediatePolicy(path_length: 0)
+ServerPolicy()
 
+IntermediatePolicy(path_length: 0)
 
 
 
 >>> from ftwpki.baselibs.validate import validate_and_clamp_validity
 
->>> validity_days= validate_and_clamp_validity(ca_cert, args.validity_days)
+>>> validity_days= validate_and_clamp_validity(config.own_cert, args.validity_days)
 
 >>> signed_cert = cert_signer.sign(csr=csr, 
 ...     policy=policy, 
@@ -284,6 +277,7 @@ IntermediatePolicy(path_length: 0)
 <Certificate(subject=<Name(...)>, ...)>
 
 
+..NOTE - Testcase for checking only
 
 >>> signed_pem = cert_signer.get_pem(signed_cert)
 >>> target_path = Path(args.certificat_sign_request).with_suffix(".crt.pem")
@@ -296,30 +290,35 @@ IntermediatePolicy(path_length: 0)
 
 .. !SECTION - load certs for chain
 
->>> allchain_file = config.chains / "all.chain.pem"
-
-
->> allchain_file.is_file()
-
->> all_chain_certs = 
 
 .. SECTION - Transferfile
 
->>> from ftwpki.baselibs.transport import encrypt_transport_package
->>> zipped_data = encrypt_transport_package(
-...     signed_cert, # user_cert
-...     ca_cert, # root_ca_cert
-...     private_key_obj,
-...     signed_cert, # recipient_cert
-...     signed_cert,
-...     ca_cert,
-...     name_user=target_path.name,
-...     name_chain="all.chain.pem",
-...     name_ca = "ca.cert.pem",
-...     )
 
->>> transfer_file_path = Path(args.certificat_sign_request).with_suffix(".zip.enc")
->>> _ = transfer_file_path.write_bytes(zipped_data)
+
+>>> from ftwpki.baselibs.package import PKIPackage
+
+>>> out_package = PKIPackage()
+>>> out_package.recipient_cert = signed_cert
+>>> out_package.private_key = private_key_obj
+>>> out_package.caroot_cert = config.own_cert
+
+>>> out_package.ca_cert = config.own_cert
+
+>>> out_package.fullchain.extend(config.fullchain)
+
+>>> out_package.fullchain #doctest: +NORMALIZE_WHITESPACE +ELLIPSIS
+[<Certificate(subject=<Name(...CN=Muster-Verband Bundesverband Root CA...)>, ...)>, 
+ <Certificate(subject=<Name(...CN=Muster-Verband Bundesverband Root CA...)>, ...)>]
+
+>>> out_package.to_encrypt=True
+
+False
+
+>>> transfer_file_path = out_package.save(args.certificat_sign_request)
+
+>>> transfer_file_path.as_posix()
+'member_server.spki'
+
 
 .. !SECTION - Transferfile
 
@@ -366,31 +365,38 @@ b'Content-Transfer-Encoding: base64\n'
 
 >>> print(get_cert_text(target_path.as_posix())) #doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
 Subject:
-     CN=Muster-Verband Hamburg Systems Issuing CA,OU=Infrastruktur und Dienste,O=Muster-Verband e.V.,L=Hamburg,ST=,C=DE
+     CN=intern.example.org...
 Issuer:
-     CN=Muster-Verband Hamburg Regional CA,OU=Regionalverband Nord,O=Muster-Verband e.V.,L=Hamburg,ST=,C=DE
+     CN=Muster-Verband Hamburg Regional CA...
 Serial Number:
      ...
 Not Before:
-     202...
+     20...
 Not After:
-     202...
+     20...
 Version:
      v3
 Extensions:
      basicConstraints:
-          CA=Yes, path_length=0
+          CA=No, path_length=None
      keyUsage:
-          key_cert_sign, crl_sign
+          digital_signature, key_encipherment
+     extendedKeyUsage:
+          serverAuth
      authorityKeyIdentifier:
           b'...'
      authorityInfoAccess:
           OCSP: http://ocsp.example.org/ham
           caIssuers: http://pki.example.org/root/root.crt
      cRLDistributionPoints:
-          http://pki.example.org/ham/sub_intermediate.crl
+          http://pki.example.org/ham/regional.crl
      subjectKeyIdentifier:
           b'...'
+
+
+
+
+
 
 .. !SECTION - Check Result 
 
