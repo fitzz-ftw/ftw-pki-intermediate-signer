@@ -10,6 +10,7 @@ Main entry points for Intermediate CA operations. (rw)
 """
 
 import getpass
+import traceback
 from pathlib import Path
 
 from cryptography import x509
@@ -17,10 +18,13 @@ from cryptography import x509
 from ftwpki.baselibs.cli_parser import CSRMultiSigningParser
 from ftwpki.baselibs.configuration import IntermedPKIConfig
 from ftwpki.baselibs.core import (
+    cert_to_record,
     get_subject_dict,
+    load_certificate_from_pem,
     load_csr_from_pem,
     load_private_key_from_pem,
 )
+from ftwpki.baselibs.openssl_comp import DbOpensslFile
 from ftwpki.baselibs.package import PKIPackage
 from ftwpki.baselibs.passwd import PasswordManager
 from ftwpki.baselibs.policies import (
@@ -34,8 +38,6 @@ from ftwpki.baselibs.signer import CertificateSigner
 from ftwpki.baselibs.validate import ValidatorDN, validate_and_clamp_validity
 
 # SECTION - Programm Signing
-
-
 
 def prog_intermediate_sign(argv: list[str] | None = None, **kwargs) -> int:
     """
@@ -54,14 +56,16 @@ def prog_intermediate_sign(argv: list[str] | None = None, **kwargs) -> int:
         pre_args.certificate if len(cert_name) >= 3 else f"{cert_name[0]}.crt.pem"
         )
         cert_name = cert_name[0]
-        config = IntermedPKIConfig(cert_name)
-        config.handle_pki_file()
+        if cert_name:
+            config = IntermedPKIConfig(cert_name)
+            config.handle_pki_file()
 
         ca_parser = CSRMultiSigningParser()
-        file_conf = config.get_dn_policies(f"{cert_name}.policy", pre_args.policy_name)
+        file_conf = (config.get_dn_policies(f"{cert_name}.policy", pre_args.policy_name) 
+                     if cert_name else {})
         ca_parser.set_defaults(**file_conf)
-        extention = config.get_extentions(f"{cert_name}.policy", pre_args.policy_name)
         args = ca_parser.parse_args(argv)
+        extention = config.get_extentions(f"{cert_name}.policy", pre_args.policy_name)
         # !SECTION - Configuration
 
         # SECTION - Validating
@@ -113,6 +117,7 @@ def prog_intermediate_sign(argv: list[str] | None = None, **kwargs) -> int:
             validity_days=validity_days.actual_days, 
             **extention
         )
+        signed_pem = cert_signer.get_pem(signed_cert)
         # !SECTION - Signing
 
         # SECTION - Transferfile
@@ -126,10 +131,23 @@ def prog_intermediate_sign(argv: list[str] | None = None, **kwargs) -> int:
         out_package.save(args.certificat_sign_request)
         # !SECTION - Transferfile
 
+        # SECTION - Database openssl compatible
+        db_dir = Path("db")
+        if not db_dir.is_dir():
+            db_dir.mkdir(parents= True)
+        db_file= DbOpensslFile(db_dir/"index.txt")
+        db_file.add_record(record=cert_to_record(
+            cert = load_certificate_from_pem(signed_pem),
+            status = "V")
+            )
+        #!SECTION - Database openssl compatible
+
+
         return 0
     except KeyboardInterrupt:
         return 1
     except Exception as e:
+        traceback.print_exc()
         print(e)
         return 1
 
