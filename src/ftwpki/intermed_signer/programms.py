@@ -10,7 +10,6 @@ Main entry points for Intermediate CA operations. (rw)
 """
 
 import getpass
-import traceback
 from pathlib import Path
 
 from cryptography import x509
@@ -73,7 +72,7 @@ def prog_intermediate_sign(argv: list[str] | None = None, **kwargs) -> int:
             x509.BasicConstraints
         ).value.path_length
         if (args.policy_name == "intermediate" 
-                and current_path_length 
+                and current_path_length is not None
                 and current_path_length <= args.path_length
             ):
             print(f"Path length too high: {current_path_length}")
@@ -147,7 +146,6 @@ def prog_intermediate_sign(argv: list[str] | None = None, **kwargs) -> int:
     except KeyboardInterrupt:
         return 1
     except Exception as e:
-        traceback.print_exc()
         print(e)
         return 1
 

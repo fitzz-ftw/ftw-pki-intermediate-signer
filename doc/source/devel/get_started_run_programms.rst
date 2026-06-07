@@ -111,20 +111,33 @@ Keinen einfluss, da kein intermediate csr.
 Enter Password:
 0
 
-
 >>> cmd_line = " -k intermed1 "
->>> cmd_line += " --policy-name standalone "
+>>> cmd_line += " --policy-name intermediate "
 >>> cmd_line += " --path-length 99 "
->>> cmd_line += " -t intermediate"
+>>> cmd_line += " -t server"
 >>> cmd_line += " -c M-V-HH-CA.crt.pem"
 >>> cmd_line += " inter1secret"
 >>> cmd_line += " member_server.csr"
 
 >>> sys_argv= shlex.split(cmd_line) 
+
+>>> prog_intermediate_sign(sys_argv)
+Path length too high: 0
+1
+
+>>> cmd_line = " -k intermed1 "
+>>> cmd_line += " --policy-name standalone "
+>>> cmd_line += " --path-length 99 "
+>>> cmd_line += " -t intermediate"
+>>> cmd_line += " inter1secret"
+>>> cmd_line += " member_server.csr" 
+
+>>> sys_argv= shlex.split(cmd_line) 
 >>> getpass.getpass = stub_getpass
 
->>> prog_intermediate_sign(sys_argv) #doctest: +SKIP
-
+>>> prog_intermediate_sign(sys_argv) 
+the following arguments are required: -c/--cert/--certificate
+1
 
 .. ANCHOR - Testen auf policymissmage
 >>> cmd_line = " -k intermed1 "
