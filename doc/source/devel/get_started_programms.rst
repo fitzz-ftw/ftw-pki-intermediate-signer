@@ -18,13 +18,13 @@ The Signing Intermediate Programm
 
 
 
->>> rel_data = Path("test_ok_data")
->>> _ = env.copy2config(rel_data /"M-V-HH-CA.pki",
+>>> rel_data = Path("data-inter-base-signer")
+>>> _ = env.copy2config(rel_data /"unpacked/M-V-HH-CA.pki",
 ...            config.passphrases/"M-V-HH-CA.pki")
 >>> _ = env.copy2config(rel_data / "inter1secret",
 ...             config.passphrases/"inter1secret")
->>> _ = env.copy2cwd(rel_data / "member_server.csr",
-...            "member_server.csr")
+>>> _ = env.copy2cwd(rel_data / "M-V-HH-Infra-CA.csr",
+...            "M-V-HH-Infra-CA.csr")
 
 >>> del config
 
@@ -47,7 +47,7 @@ The Signing Intermediate Programm
 >>> cmd_line += " -t server"
 >>> cmd_line += " -c M-V-HH-CA.crt.pem"
 >>> cmd_line += " inter1secret"
->>> cmd_line += " member_server.csr"
+>>> cmd_line += " M-V-HH-Infra-CA.csr"
 
 >>> import shlex
 >>> sys_argv= shlex.split(cmd_line) 
@@ -57,7 +57,7 @@ The Signing Intermediate Programm
  '-t', 'server', 
  '-c', 'M-V-HH-CA.crt.pem', 
  'inter1secret', 
- 'member_server.csr']
+ 'M-V-HH-Infra-CA.csr']
 
 .. !SECTION - Prepare
 
@@ -114,7 +114,7 @@ Namespace(countryName='match',
      validity_days=365, 
      path_length=0, 
      passphrasefile='inter1secret', 
-     certificat_sign_request='member_server.csr', 
+     certificat_sign_request='M-V-HH-Infra-CA.csr', 
      policy_type='server', 
      policy={'countryName': 'match', 
           'stateOrProvinceName': 'optional', 
@@ -144,7 +144,7 @@ Namespace(countryName='match',
 >>> current_path_length = config.own_cert.extensions.get_extension_for_class(x509.BasicConstraints).value.path_length
 
 >>> current_path_length
-0
+1
 
 
 
@@ -317,7 +317,7 @@ False
 >>> transfer_file_path = out_package.save(args.certificat_sign_request)
 
 >>> transfer_file_path.as_posix()
-'member_server.spki'
+'M-V-HH-Infra-CA.spki'
 
 
 .. !SECTION - Transferfile
@@ -365,7 +365,7 @@ b'Content-Transfer-Encoding: base64\n'
 
 >>> print(get_cert_text(target_path.as_posix())) #doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
 Subject:
-     CN=intern.example.org...
+     CN=Muster-Verband Hamburg Systems Issuing CA...
 Issuer:
      CN=Muster-Verband Hamburg Regional CA...
 Serial Number:
@@ -384,14 +384,14 @@ Extensions:
      extendedKeyUsage:
           serverAuth
      authorityKeyIdentifier:
-          b'...'
+          b...
      authorityInfoAccess:
           OCSP: http://ocsp.example.org/ham
           caIssuers: http://pki.example.org/root/root.crt
      cRLDistributionPoints:
           http://pki.example.org/ham/regional.crl
      subjectKeyIdentifier:
-          b'...'
+          b...
 
 
 

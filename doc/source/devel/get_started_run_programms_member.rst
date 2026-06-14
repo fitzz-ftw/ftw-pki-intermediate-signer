@@ -23,8 +23,8 @@ The Signing Intermediate Programm
 ...            config.passphrases/"M-V-HH-CA.pki")
 >>> _ = env.copy2config(rel_data / "inter1secret",
 ...             config.passphrases/"inter1secret")
->>> _ = env.copy2cwd(rel_data / "M-V-HH-Infra-CA.csr",
-...            "M-V-HH-Infra-CA.csr")
+>>> _ = env.copy2cwd(rel_data / "M-V-HH-Member-CA.csr",
+...            "M-V-HH-Member-CA.csr")
 
 >>> del config
 
@@ -57,7 +57,7 @@ The Signing Intermediate Programm
 >>> cmd_line += " -t server"
 >>> cmd_line += " -c M-V-HH-CA.crt.pem"
 >>> cmd_line += " inter1secret"
->>> cmd_line += " M-V-HH-Infra-CA.csr"
+>>> cmd_line += " M-V-HH-Member-CA.csr"
 
 >>> import shlex
 >>> sys_argv= shlex.split(cmd_line) 
@@ -67,7 +67,7 @@ The Signing Intermediate Programm
  '-t', 'server', 
  '-c', 'M-V-HH-CA.crt.pem', 
  'inter1secret', 
- 'M-V-HH-Infra-CA.csr']
+ 'M-V-HH-Member-CA.csr']
 
 .. !SECTION - Prepare
 
@@ -77,16 +77,16 @@ The Signing Intermediate Programm
 Enter Password:
 0
 
->>> _ = env.copy2cwd(rel_data / "M-V-HH-Infra-CA.csr",
-...            "M-V-HH-Infra-CA.csr")
+>>> _ = env.copy2cwd(rel_data / "M-V-HH-Member-CA.csr",
+...            "M-V-HH-Member-CA.csr")
 >>> getpass.getpass = stub_keyboard_interrupt
 >>> prog_intermediate_sign(sys_argv)
 Enter Password:
 1
 
 
->>> _ = env.copy2cwd(rel_data / "M-V-HH-Infra-CA.csr",
-...            "M-V-HH-Infra-CA.csr")
+>>> _ = env.copy2cwd(rel_data / "M-V-HH-Member-CA.csr",
+...            "M-V-HH-Member-CA.csr")
 >>> getpass.getpass = stub_exception
 >>> prog_intermediate_sign(sys_argv)
 This is a testexception.
@@ -100,7 +100,7 @@ This is a testexception.
 >>> cmd_line += " -t server"
 >>> cmd_line += " -c M-V-HH-CA.crt.pem"
 >>> cmd_line += " inter1secret"
->>> cmd_line += " M-V-HH-Infra-CA.csr"
+>>> cmd_line += " M-V-HH-Member-CA.csr"
 
 >>> sys_argv= shlex.split(cmd_line) 
 >>> getpass.getpass = stub_getpass
@@ -117,7 +117,7 @@ Enter Password:
 >>> cmd_line += " -t server"
 >>> cmd_line += " -c M-V-HH-CA.crt.pem"
 >>> cmd_line += " inter1secret"
->>> cmd_line += " M-V-HH-Infra-CA.csr"
+>>> cmd_line += " M-V-HH-Member-CA.csr"
 
 >>> sys_argv= shlex.split(cmd_line) 
 
@@ -130,7 +130,7 @@ Path length too high: 1
 >>> cmd_line += " --path-length 99 "
 >>> cmd_line += " -t intermediate"
 >>> cmd_line += " inter1secret"
->>> cmd_line += " M-V-HH-Infra-CA.csr" 
+>>> cmd_line += " M-V-HH-Member-CA.csr" 
 
 >>> sys_argv= shlex.split(cmd_line) 
 >>> getpass.getpass = stub_getpass
@@ -147,11 +147,11 @@ the following arguments are required: -c/--cert/--certificate
 >>> cmd_line += " -t server"
 >>> cmd_line += " -c M-V-HH-CA.crt.pem"
 >>> cmd_line += " inter1secret"
->>> cmd_line += " M-V-HH-Infra-CA.csr"
+>>> cmd_line += " M-V-HH-Member-CA.csr"
 >>> sys_argv= shlex.split(cmd_line) 
 
->>> _ = env.copy2cwd(rel_data / "M-V-HH-Infra-CA.csr",
-...            "M-V-HH-Infra-CA.csr")
+>>> _ = env.copy2cwd(rel_data / "M-V-HH-Member-CA.csr",
+...            "M-V-HH-Member-CA.csr")
 >>> getpass.getpass = stub_getpass
 >>> prog_intermediate_sign(sys_argv)
 While policyvalidation following missmatch occurs:
