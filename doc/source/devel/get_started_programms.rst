@@ -196,7 +196,7 @@ Returncode: 1
 >>> from ftwpki.baselibs.passwd import PasswordManager
 >>> pwd_man = PasswordManager(str(config.private_keys))
 >>> pwd_man #doctest: +ELLIPSIS
-PasswordManager(private_dir='.../ftwpki/.private')
+PasswordManager(private_dir='...ftwpki....private')
 
 >>> config.private_keys.as_posix() #doctest: +ELLIPSIS 
 '...ftwpki/.private'
