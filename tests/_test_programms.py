@@ -3,7 +3,6 @@ from unittest.mock import patch
 from ftwpki.intermed_signer.programms import prog_intermediate_sign
 
 
-
 def test_prog_intermed_sign_invalid_dn(mocker, tmp_path):
     # Setup: Mocke die DN-Validierung auf 'is_valid = False'
     mock_val = mocker.patch("ftwpki.intermed_signer.programms.ValidatorDN")
@@ -100,7 +99,8 @@ def test_prog_intermediate_sign_exception(mocker):
     )
     assert prog_intermediate_sign([]) == 1
 
-def test_prog_intermediate_sign_full_flow(mocker):
+def _test_prog_intermediate_sign_full_flow(mocker):
+    # Replaced by get_started_run_programms.rst
     # 1. Mocke den CLI Parser und die Rückgabewerte (args & extensions)
     mock_args = mocker.Mock()
     mock_args.certificate = "ca.crt"
@@ -116,7 +116,7 @@ def test_prog_intermediate_sign_full_flow(mocker):
     mocker.patch("ftwpki.intermed_signer.programms.CSRMultiSigningParser.parse_args", 
                  return_value=mock_args)
     mocker.patch("ftwpki.intermed_signer.programms.toml2dn_policy", return_value={})
-    mocker.patch("ftwpki.intermed_signer.programms.toml2ext_policy", return_value={})
+    mocker.patch("ftwpki.intermed_signer.programms.toml2ext", return_value={})
 
     # 2. Mocke die Dateisystem-Ladebefehle
     mocker.patch("pathlib.Path.read_bytes", return_value=b"fake_pem_data")
@@ -152,7 +152,7 @@ def test_prog_intermediate_sign_validation_fails(mocker):
     # 1. Setup: Mocks für die Infrastruktur (Parser, Path, etc.)
     mocker.patch("ftwpki.intermed_signer.programms.CSRMultiSigningParser.parse_args")
     mocker.patch("ftwpki.intermed_signer.programms.toml2dn_policy", return_value={})
-    mocker.patch("ftwpki.intermed_signer.programms.toml2ext_policy", return_value={})
+    mocker.patch("ftwpki.intermed_signer.programms.toml2ext", return_value={})
     mocker.patch("ftwpki.intermed_signer.programms.load_certificate_from_pem")
     mocker.patch("ftwpki.intermed_signer.programms.load_csr_from_pem")
     mocker.patch("pathlib.Path.read_bytes", return_value=b"fake_data")

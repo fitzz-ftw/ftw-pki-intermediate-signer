@@ -2,96 +2,131 @@ The Signing Intermediate Programm
 ####################################
 
 .. SECTION - Setup
+>>> appname="ftwpki"
+>>> appauthor= "FitzzTechXikWelt"
 
 >>> from fitzzftw.devtools.testinfra import TestHomeEnvironment
 >>> from pathlib import Path
->>> env = TestHomeEnvironment(Path("doc/source/devel/testhome"))
+>>> env = TestHomeEnvironment(Path("doc/source/devel/testhome"),
+...     appname=appname, appauthor=appauthor
+...     )
 >>> env.setup(True)
->>> conf_file = env.copy2cwd("intermed_conf.toml")
+>>> env.clean_output()
+
+>>> from ftwpki.baselibs.configuration import IntermedPKIConfig
+>>> config:IntermedPKIConfig = IntermedPKIConfig()
+
+
+
+>>> rel_data = Path("data-inter-base-signer")
+>>> _ = env.copy2config(rel_data /"unpacked/M-V-HH-CA.pki",
+...            config.passphrases/"M-V-HH-CA.pki")
+>>> _ = env.copy2config(rel_data / "inter1secret",
+...             config.passphrases/"inter1secret")
+>>> _ = env.copy2cwd(rel_data / "M-V-HH-Infra-CA.csr",
+...            "M-V-HH-Infra-CA.csr")
+
+>>> del config
+
 
 .. !SECTION
 .. SECTION - Prepare
 
 >>> from pathlib import Path
->>> private_dir:Path = Path("privat")
->>> private_dir.mkdir(parents=True, exist_ok=True)
->>> test_paswd_path = env.copy2cwd("privat/testpasswd")
->>> ca_key_path = env.copy2cwd("privat/reinsha.key.pem")
 
->>> ca_cert_path = env.copy2cwd("reinsha_public/Fitzz-TeXnik-WeltSomewherecity.crt", 
-...       "Fitzz-TeXnik-WeltSomewherecity.crt")
->>> ca_cert_path = env.copy2cwd("reinsha_public/reinsha.pub.pem", "reinsha.pub.pem")
->>> ca_cert_path = env.copy2cwd("cert_in/node-01.csr","node-01.csr")
 
 >>> def getpasswd(prompt:str)->str:
 ...     print(prompt)
-...     return "strenggeheim"
+...     return "secret"
 
 
->>> cmd_line =  "--conf-file intermed_conf.toml"
->>> cmd_line += " -k privat/reinsha.key.pem "
->>> cmd_line += " --private-dir privat"
->>> cmd_line += " --policy-name standalone"
->>> cmd_line += " -t standalone"
->>> cmd_line += " -c Fitzz-TeXnik-WeltSomewherecity.crt"
->>> cmd_line += " testpasswd"
->>> cmd_line += " node-01.csr"
+>> cmd_line =  "--conf-file ca_intermed_hamburg_conf.toml"
+
+>>> cmd_line = " -k intermed1 "
+>>> cmd_line += " --policy-name standalone "
+>>> cmd_line += " -t server"
+>>> cmd_line += " -c M-V-HH-CA.crt.pem"
+>>> cmd_line += " inter1secret"
+>>> cmd_line += " M-V-HH-Infra-CA.csr"
 
 >>> import shlex
 >>> sys_argv= shlex.split(cmd_line) 
 >>> sys_argv #doctest: +NORMALIZE_WHITESPACE
-['--conf-file', 'intermed_conf.toml', 
- '-k', 'privat/reinsha.key.pem', 
- '--private-dir', 'privat', 
- '--policy-name', 'standalone',
- '-t', 'standalone',
- '-c', 'Fitzz-TeXnik-WeltSomewherecity.crt',
- 'testpasswd',
- 'node-01.csr']
+['-k', 'intermed1', 
+ '--policy-name', 'standalone', 
+ '-t', 'server', 
+ '-c', 'M-V-HH-CA.crt.pem', 
+ 'inter1secret', 
+ 'M-V-HH-Infra-CA.csr']
 
-.. !SECTION
-
+.. !SECTION - Prepare
 
 
 .. SECTION - Programm Signing
 
 .. SECTION - Configuration
+>>> from ftwpki.baselibs.configuration import IntermedPKIConfig
 
->>> from ftwpki.baselibs.toml_utils import toml2dn_policy, toml2ext_policy
+
+>>> from ftwpki.baselibs.toml_utils import toml2dn_policy, toml2ext
 >>> from ftwpki.baselibs.cli_parser import CSRMultiSigningParser
 
->>> ca_parser = CSRMultiSigningParser(prog="ftwpkicasign")
+>>> pre_parser = CSRMultiSigningParser(add_help=False, allow_abbrev=False)
+>>> pre_args , _ = pre_parser.parse_known_args(sys_argv)
 
->>> ca_parser.set_defaults(**toml2dn_policy(sys_argv))
->>> extention = toml2ext_policy(sys_argv)
+>>> cert_name = pre_args.certificate.split(".")
+
+
+>>> pre_args.certificat = pre_args.certificate if len(cert_name) >= 3 else f"{cert_name[0]}.crt.pem"  
+
+>>> cert_name = cert_name[0]
+
+
+>>> config = IntermedPKIConfig(cert_name)
+>>> config.handle_pki_file()
+
+
+>>> ca_parser = CSRMultiSigningParser()
+
+>>> file_conf = config.get_dn_policies(f"{cert_name}.policy",pre_args.policy_name)
+
+
+>>> ca_parser.set_defaults(**file_conf)
+
+
+>>> extention = config.get_extentions(f"{cert_name}.policy", pre_args.policy_name)
+
+
 
 >>> args = ca_parser.parse_args(sys_argv)
 >>> args #doctest: +NORMALIZE_WHITESPACE +ELLIPSIS 
 Namespace(countryName='match', 
-    stateOrProvinceName='supplied', 
-    localityName='optional', 
-    organizationName='match', 
-    organizationalUnitName='optional', 
-    commonName='supplied', 
-    policy_name='standalone',
-    conf_file=...Path('intermed_conf.toml'), 
-    private_key='privat/reinsha.key.pem', 
-    private_dir='privat',
-    certificate='Fitzz-TeXnik-WeltSomewherecity.crt',
-    validity_days=365,
-    path_length=0, 
-    passphrasefile='testpasswd',
-    certificat_sign_request='node-01.csr',
-    policy_type='standalone', 
-    policy={'countryName': 'match', 
-        'stateOrProvinceName': 'supplied', 
-        'localityName': 'optional', 
-        'organizationName': 'match', 
-        'organizationalUnitName': 'optional', 
-        'commonName': 'supplied'})
+     stateOrProvinceName='optional', 
+     localityName='match', 
+     organizationName='match', 
+     organizationalUnitName='optional', 
+     commonName='supplied', 
+     policy_name='standalone', 
+     conf_file=None, 
+     key_name='intermed1', 
+     private_dir=None, 
+     certificate='M-V-HH-CA.crt.pem', 
+     validity_days=365, 
+     path_length=0, 
+     passphrasefile='inter1secret', 
+     certificat_sign_request='M-V-HH-Infra-CA.csr', 
+     policy_type='server', 
+     policy={'countryName': 'match', 
+          'stateOrProvinceName': 'optional', 
+          'localityName': 'match', 
+          'organizationName': 'match', 
+          'organizationalUnitName': 'optional', 
+          'commonName': 'supplied'}, 
+     private_key='intermed1.key.pem')
 
 
-.. !SECTION
+
+.. !SECTION - Configuration
 
 .. SECTION - Validating
 
@@ -101,12 +136,17 @@ Namespace(countryName='match',
 ...     get_subject_dict,
 ...     )
 
->>> ca_cert = load_certificate_from_pem(
-...      pem_data=Path(args.certificate).read_bytes())
+
+
 
 >>> from cryptography import x509
 
->>> current_path_length = ca_cert.extensions.get_extension_for_class(x509.BasicConstraints).value.path_length
+>>> current_path_length = config.own_cert.extensions.get_extension_for_class(x509.BasicConstraints).value.path_length
+
+>>> current_path_length
+1
+
+
 
 >>> if (args.policy_name == "intermediate" 
 ...     and current_path_length <= args.path_length):
@@ -121,7 +161,7 @@ Namespace(countryName='match',
 >>> from ftwpki.baselibs.validate import ValidatorDN
 
 >>> val_dn= ValidatorDN(args.policy,
-...          get_subject_dict(ca_cert))
+...          get_subject_dict(config.own_cert))
 >>> validate_result=val_dn.validate(get_subject_dict(csr))
 >>> validate_result.errors.sort()
 
@@ -146,32 +186,28 @@ Returncode 1 abbricht. Es wird kein Zertifikat ausgestellt,
 das nicht den Richtlinien entspricht. Dies stellt die Konsistenz 
 der gesamten Zertifikatskette sicher.
 
->>> if not validate_result.is_valid:
-...     for error in validate_result.errors:
-...         print(error)
-...     print("!!!Programstop!!!")
-...     print("Returncode: 1")
-  - [stateOrProvinceName]: SUPPLIED
-!!!Programstop!!!
 Returncode: 1
 
 .. !SECTION - Validating
 
 
-
 .. SECTION - Passwordhandling
 
 >>> from ftwpki.baselibs.passwd import PasswordManager
->>> pwd_man = PasswordManager(private_dir=args.private_dir)
->>> pwd_man
-PasswordManager(private_dir='privat')
+>>> pwd_man = PasswordManager(str(config.private_keys))
+>>> pwd_man #doctest: +ELLIPSIS
+PasswordManager(private_dir='...ftwpki....private')
 
+>>> config.private_keys.as_posix() #doctest: +ELLIPSIS 
+'...ftwpki/.private'
 
-
->>> pass_phrase = pwd_man.decrypt_password_file(args.passphrasefile, getpasswd("Enter Password:"))
+>>> pass_phrase = pwd_man.decrypt_password_file(
+...         config.private_keys/args.passphrasefile, 
+...         getpasswd("Enter Password:"))
 Enter Password:
 
 .. !SECTION - Passwordhandling
+
 
 
 .. SECTION - Signing
@@ -185,13 +221,18 @@ Enter Password:
 ...     )
 >>> from ftwpki.baselibs.signer import CertificateSigner
 
->>> private_key_obj= load_private_key_from_pem(
-...             pem_data = Path(args.private_key).read_bytes(), 
-...             passphrase=pass_phrase)
 
+
+
+
+>>> private_key_obj= load_private_key_from_pem(
+...     pem_data = config.private_key(), 
+...     passphrase=pass_phrase)
+
+>> type(private_key_obj)
 
 >>> cert_signer = CertificateSigner(
-...      ca_cert=ca_cert,
+...      ca_cert=config.own_cert,
 ...      ca_key=private_key_obj)
 
 
@@ -207,7 +248,7 @@ Enter Password:
 >>> from ftwpki.baselibs.policies import ServerPolicy
 
 >>> policy_select = {
-...       "intermediate": IntermediatePolicy(pathlength = args.path_length),
+...       "intermediate": IntermediatePolicy(path_length = args.path_length),
 ...       "standalone": ClientServerPolicy(),
 ...       "user": UserPolicy(),
 ...       "client": ClientPolicy(),
@@ -217,14 +258,15 @@ Enter Password:
 >>> policy = policy_select[args.policy_type]
 
 >>> policy
-ClientServerPolicy()
+ServerPolicy()
 
+IntermediatePolicy(path_length: 0)
 
 
 
 >>> from ftwpki.baselibs.validate import validate_and_clamp_validity
 
->>> validity_days= validate_and_clamp_validity(ca_cert, args.validity_days)
+>>> validity_days= validate_and_clamp_validity(config.own_cert, args.validity_days)
 
 >>> signed_cert = cert_signer.sign(csr=csr, 
 ...     policy=policy, 
@@ -235,31 +277,48 @@ ClientServerPolicy()
 <Certificate(subject=<Name(...)>, ...)>
 
 
+..NOTE - Testcase for checking only
 
 >>> signed_pem = cert_signer.get_pem(signed_cert)
->>> target_path = Path(args.certificat_sign_request).with_suffix(".crt")
+>>> target_path = Path(args.certificat_sign_request).with_suffix(".crt.pem")
 >>> save_pem(data = signed_pem, 
 ...     target_path=target_path, 
 ...     is_private = True)
 
 .. !SECTION - Signing
+.. SECTION - load certs for chain
 
+.. !SECTION - load certs for chain
 
 
 .. SECTION - Transferfile
 
->>> from ftwpki.baselibs.transport import encrypt_transport_package
->>> zipped_data = encrypt_transport_package(
-...     signed_cert, # user_cert
-...     ca_cert, # root_ca_cert
-...     private_key_obj,
-...     signed_cert, # recipient_cert
-...     signed_cert,
-...     ca_cert,
-...     )
 
->>> transfer_file_path = Path(args.certificat_sign_request).with_suffix(".zip.enc")
->>> _ = transfer_file_path.write_bytes(zipped_data)
+
+>>> from ftwpki.baselibs.package import PKIPackage
+
+>>> out_package = PKIPackage()
+>>> out_package.recipient_cert = signed_cert
+>>> out_package.private_key = private_key_obj
+>>> out_package.caroot_cert = config.own_cert
+
+>>> out_package.ca_cert = config.own_cert
+
+>>> out_package.fullchain.extend(config.fullchain)
+
+>>> out_package.fullchain #doctest: +NORMALIZE_WHITESPACE +ELLIPSIS
+[<Certificate(subject=<Name(...CN=Muster-Verband Bundesverband Root CA...)>, ...)>, 
+ <Certificate(subject=<Name(...CN=Muster-Verband Bundesverband Root CA...)>, ...)>]
+
+>>> out_package.to_encrypt=True
+
+False
+
+>>> transfer_file_path = out_package.save(args.certificat_sign_request)
+
+>>> transfer_file_path.as_posix()
+'M-V-HH-Infra-CA.spki'
+
 
 .. !SECTION - Transferfile
 
@@ -306,9 +365,9 @@ b'Content-Transfer-Encoding: base64\n'
 
 >>> print(get_cert_text(target_path.as_posix())) #doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
 Subject:
-     CN=node-01.internal,OU=,O=Fitzz TeXnik Welt,L=,ST=,C=DE
+     CN=Muster-Verband Hamburg Systems Issuing CA...
 Issuer:
-     CN=Fitzz Reinshagen,OU=Security,O=Fitzz TeXnik Welt,L=Somewherecity,ST=Mystate,C=DE
+     CN=Muster-Verband Hamburg Regional CA...
 Serial Number:
      ...
 Not Before:
@@ -323,16 +382,21 @@ Extensions:
      keyUsage:
           digital_signature, key_encipherment
      extendedKeyUsage:
-          serverAuth, clientAuth
+          serverAuth
      authorityKeyIdentifier:
-          b'...'
+          b...
      authorityInfoAccess:
-          OCSP: http://ocsp.deine-pki.test
-          caIssuers: http://pki.deine-pki.test/ca.crt
+          OCSP: http://ocsp.example.org/ham
+          caIssuers: http://pki.example.org/root/root.crt
      cRLDistributionPoints:
-          http://pki.deine-pki.test/crl
+          http://pki.example.org/ham/regional.crl
      subjectKeyIdentifier:
-          b'...'
+          b...
+
+
+
+
+
 
 .. !SECTION - Check Result 
 

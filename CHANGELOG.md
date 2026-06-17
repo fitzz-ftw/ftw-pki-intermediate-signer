@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.4] - 2026-06-17
+
+### Added
+- Implement database record tracking for signing operations
+- Add temporary DEV testing assets and test artifacts
+
+### Changed
+- Align intermediate signing tool with unified key-name schema
+- Integrate TomlPreParser into intermediate CSR program
+- Adapt to streamlined baselibs and modernize utility interfaces
+- Rename legacy TOML functions to break search patterns
+- Refactor signer logic and improve error handling protocols
+
+### Fixed
+- Improve error handling in ftwpki.intermed_signer
+
+### Documentation
+- Update technical documentation and clean up imports
+
+
 ## [0.0.3a2] - 2026-05-18
 
 ### Added

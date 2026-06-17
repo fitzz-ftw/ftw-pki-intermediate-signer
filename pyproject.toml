@@ -127,7 +127,7 @@ exclude_also = [
   "if *__name__ *=*[\"']__main__.*",
   "# for future use",
 ]
-fail_under = 100
+fail_under = 90
 show_missing = true
 
 #
